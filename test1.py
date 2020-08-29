@@ -1,5 +1,6 @@
 import random
 import sys
+from tqdm import tqdm
 
 from netEnv import NetEnv
 
@@ -46,26 +47,26 @@ class Test():
         sum = 0
         max = -sys.maxsize
         if test_way == 'random':
-            for i in range(100):
+            for i in tqdm(range(200)):
                 self.env.reset()
                 _, s, _ = self.random()
                 sum += s
                 if s > max:
                     max = s
-            return sum / 100, max
+            return sum / 200, max
         if test_way == 'pooling':
-            for i in range(100):
+            for i in tqdm(range(200)):
                 self.env.reset()
                 _, s, _ = self.pooling()
                 sum += s
                 if s > max:
                     max = s
-            return sum / 100, max
+            return sum / 200, max
         if test_way == 'choose_one':
-            for i in range(100):
+            for i in tqdm(range(200)):
                 self.env.reset()
                 _, s, _ = self.choose_one()
                 sum += s
                 if s > max:
                     max = s
-            return sum / 100, max
+            return sum / 200, max

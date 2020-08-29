@@ -47,24 +47,37 @@ import torch.nn.functional as F
 #         return x
 
 
+class ConvBlock(nn.Module):
+    def __init__(self):
+        super(ConvBlock, self).__init__()
+        self.conv1 = nn.Conv2d(8, 32, 3, 1, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1, 1)
+        self.conv3 = nn.Conv2d(64, 3, 1, 1, 1)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.leaky_relu_(x)
+        x = self.conv2(x)
+        x = F.leaky_relu_(x)
+        x = self.conv3(x)
+        return x.flatten(start_dim=1)
+
+
 class DQNNet(nn.Module):
-    def __init__(self, input_space, action_space, device):
+    def __init__(self, action_space, device):
         super(DQNNet, self).__init__()
         self.device = device
-        self.fc1 = nn.Linear(input_space, 4*128)
-        self.fc2 = nn.Linear(4*128, 256)
-        self.fc3 = nn.Linear(256, 256)
-        self.fc4 = nn.Linear(256, 32)
-        self.fc5 = nn.Linear(32, action_space)
+        self.mlp = nn.Sequential(nn.Linear(146, 256), nn.LeakyReLU(0.1), nn.Linear(256, 256), nn.LeakyReLU(0.1),
+                                 nn.Linear(256, 64))
+        self.fc = nn.Sequential(nn.Linear(3*64, 256), nn.LeakyReLU(0.1), nn.Linear(256, 128), nn.LeakyReLU(0.1),
+                                nn.Linear(128, action_space))
 
     def forward(self, obs, state=None, info={}):
         # assert isinstance(obs, dict)
-        node_features = [torch.Tensor(x[:, :, 0]*x[:, :, 1]) for x in obs['node_features'].values()]
-        x = torch.cat(node_features, 1).to(self.device)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = self.fc5(x)
+        x = torch.Tensor(obs).to(self.device)
+        squeezed_x = [x[:, i, :].squeeze(dim=1) for i in range(3)]
+        squeezed_x = [self.mlp(sx) for sx in squeezed_x]
+        x = torch.cat(squeezed_x, dim=1)
+        x = self.fc(x)
         return x, state
 

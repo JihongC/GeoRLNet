@@ -9,7 +9,8 @@ class Slice:
     def __init__(self, topology):
         self.graph = copy.deepcopy(topology.graph)
         self.node_features_min_band = None
-        self.flows_to_be_routed = []
+        self.band_matrix = None
+        self.edge_features = None
 
     def route_flow(self, flow):
         flow.route_flow(self.graph, weight='weight')
@@ -49,3 +50,28 @@ class Slice:
                     min_band = self.graph.edges[node, i]['bandwidth']
             node_feature[node] = min_band
         self.node_features_min_band = node_feature
+
+    def gen_band_adj_matrix(self):
+        """
+        generate adjacency matrix of a specific feature, its now about bandwidth
+
+        Returns
+        -------
+        void: self.band_matrix
+
+        """
+        rng = np.random.default_rng()
+        band_matrix = rng.random((len(self.graph.nodes), len(self.graph.nodes)))
+        for u, v in self.graph.edges:
+            band_matrix[u][v] = self.graph[u][v]['bandwidth']
+            band_matrix[v][u] = self.graph[u][v]['bandwidth']
+        self.band_matrix = band_matrix
+
+    def gen_edge_features(self):
+        edge_feature = np.zeros((len(self.graph.edges), ), dtype=np.float)
+        for i, (a, b) in enumerate(self.graph.edges):
+            edge_feature[i] = self.graph[a][b]['bandwidth']
+        self.edge_features = edge_feature
+
+
+

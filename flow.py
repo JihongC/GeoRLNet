@@ -12,6 +12,8 @@ class Flow:
         self.matrix = None
         self.belong_slice = None
         self.flow_bfs_nodes = None
+        self.bfs_matrix = None
+        self.edge_bfs_features = None
         self.route_nodes = []
         self.route_links = []
 
@@ -71,7 +73,7 @@ class Flow:
             return
         self.route_state = False
         for a, b in self.route_links:
-                topology[a][b]['bandwidth'] += self.size
+            topology[a][b]['bandwidth'] += self.size
         self.route_nodes.clear()
         self.route_links.clear()
 
@@ -111,3 +113,48 @@ class Flow:
         signal = self.route_state
         self.disconnect_flow(topology)
         return signal
+
+    def gen_bfs_matrix(self, topology):
+        """
+        generate the bfs matrix of a certain depth, it combine with the source bfs matrix and destination bfs matrix, t-
+        -he depth is 10 in default, it should be adapted with the structure of the topology.
+
+        Parameters
+        ----------
+        topology: the topology to compute the bfs matrix
+
+        Returns
+        -------
+        void: ndarray, apply the value to self.bfs_matrix
+
+        """
+        rng = np.random.default_rng()
+        bfs_matrix = rng.random((len(topology.nodes), len(topology.nodes)))
+        for u, v in nx.bfs_edges(topology, self.source, depth_limit=10):
+            bfs_matrix[u][v] += self.size
+            bfs_matrix[v][u] += self.size
+        for u, v in nx.bfs_edges(topology, self.destination, depth_limit=10):
+            bfs_matrix[u][v] += self.size
+            bfs_matrix[v][u] += self.size
+        self.bfs_matrix = bfs_matrix
+
+    def gen_bfs_edges(self, topology):
+        """
+        generate edge features
+        Parameters
+        ----------
+        topology
+
+        Returns
+        -------
+
+        """
+        bfs_edge_feature = np.zeros((len(topology.edges), ), dtype=np.float)
+        source_bfs_edges = list(nx.bfs_edges(topology, self.source, depth_limit=15))
+        destination_bfs_edges = list(nx.bfs_edges(topology, self.destination, depth_limit=15))
+        for i, (a, b) in enumerate(topology.edges):
+            if (a, b) in source_bfs_edges or (b, a) in source_bfs_edges:
+                bfs_edge_feature[i] += 1
+            if (a, b) in destination_bfs_edges or (b, a) in destination_bfs_edges:
+                bfs_edge_feature[i] += 1
+        self.edge_bfs_features = bfs_edge_feature

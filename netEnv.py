@@ -1,4 +1,4 @@
-from gym import core, spaces
+from gym import core, spaces, ObservationWrapper
 import numpy as np
 
 from slice import Slice
@@ -15,10 +15,12 @@ class NetEnv(core.Env):
         self.num_flow_to_route = 0
         self.edge_set = None
         self.action_space = spaces.Discrete(num_slices)
-        node_feature_low = np.zeros((len(self.topology.graph.nodes), 2), dtype=np.float)
-        node_feature_high = np.full((len(self.topology.graph.nodes), 2), np.inf)
-        self.observation_space = spaces.Dict({'edge_set': spaces.Box(low=0, high=len(self.topology.graph.nodes), shape=(2, len(self.topology.graph.edges))),
-                                              'node_features': spaces.Dict({'slice'+str(i): spaces.Box(node_feature_low, node_feature_high) for i in range(self.num_slices)})})
+        edge_feature_low = np.zeros((len(self.topology.graph.edges),), dtype=np.float)
+        edge_feature_high = np.full((len(self.topology.graph.edges),), np.inf)
+        self.observation_space = spaces.Dict(
+            dict({'flow': spaces.Box(low=edge_feature_low, high=edge_feature_high)},
+                 **{'slice' + str(i): spaces.Box(low=edge_feature_low, high=edge_feature_high)
+                    for i in range(self.num_slices)}))
 
     def reset(self):
         """
@@ -29,19 +31,17 @@ class NetEnv(core.Env):
             all slice adj_matrix and flow features
         """
         self.num_flow_to_route = 0
-        self.edge_set = self.topology.edge_set()
+        # self.edge_set = self.topology.edge_set()
         self.slices = [Slice(self.topology) for _ in range(self.num_slices)]
         for s in self.slices:
             s.init_band(self.num_slices)
-            s.gen_node_features()
+            s.gen_edge_features()
         flow_generator = self.topology.gen_flows()
-        self.flows = [Flow(i, *next(flow_generator)) for i in range(200)]
+        self.flows = [Flow(i, *next(flow_generator)) for i in range(300)]
         for f in self.flows:
-            f.gen_flow_bfs_nodes(self.topology.graph)
-        node_features = [np.stack([self.flows[self.num_flow_to_route].flow_bfs_nodes, s.node_features_min_band], axis=1)
-                         for s in self.slices]
-        return {'edge_set': self.edge_set, 'node_features': {'slice'+str(i):  node_features[i]
-                                                             for i in range(self.num_slices)}}
+            f.gen_bfs_edges(self.topology.graph)
+        return dict({'flow': self.flows[self.num_flow_to_route].edge_bfs_features},
+                    **{'slice' + str(i): self.slices[i].edge_features for i in range(self.num_slices)})
 
     def step(self, action):
         """
@@ -57,7 +57,7 @@ class NetEnv(core.Env):
         """
         # assert isinstance(action, int) and 0 <= action < self.num_slices
         self.flows[self.num_flow_to_route].belong_slice = self.slices[action]
-        if len(self.flows)-1 == self.num_flow_to_route:
+        if len(self.flows) - 101 == self.num_flow_to_route:
             done = True
         else:
             done = False
@@ -66,13 +66,11 @@ class NetEnv(core.Env):
         self.dynamic_band_adjust(action, self.flows[self.num_flow_to_route].route_links,
                                  self.flows[self.num_flow_to_route].size, 100)
         for s in self.slices:
-            s.gen_node_features()
+            s.gen_edge_features()
         if not done:
             self.num_flow_to_route += 1
-        node_features = [np.stack([self.flows[self.num_flow_to_route].flow_bfs_nodes, s.node_features_min_band], axis=1)
-                         for s in self.slices]
-        obs = {'edge_set': self.edge_set, 'node_features': {'slice'+str(i): node_features[i]
-                                                            for i in range(self.num_slices)}}
+        obs = dict({'flow': self.flows[self.num_flow_to_route].edge_bfs_features},
+                   **{'slice' + str(i): self.slices[i].edge_features for i in range(self.num_slices)})
         return obs, reward, done, {}
 
     def render(self, mode='human'):
@@ -137,3 +135,11 @@ class NetEnv(core.Env):
                             s.graph[a][b]['bandwidth'] -= band_size
 
 
+class TransObservation(ObservationWrapper):
+    def __init__(self, env):
+        super(TransObservation, self).__init__(env)
+
+    def observation(self, observation):
+        bfs_edge = observation['flow']
+        slice_edge = [observation['slice' + str(i)] * bfs_edge for i in range(3)]
+        return np.stack(slice_edge, axis=0)
