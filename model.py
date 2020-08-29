@@ -69,8 +69,9 @@ class DQNNet(nn.Module):
         self.device = device
         self.mlp = nn.Sequential(nn.Linear(146, 256), nn.LeakyReLU(0.1), nn.Linear(256, 256), nn.LeakyReLU(0.1),
                                  nn.Linear(256, 64))
-        self.fc = nn.Sequential(nn.Linear(3*64, 256), nn.LeakyReLU(0.1), nn.Linear(256, 128), nn.LeakyReLU(0.1),
-                                nn.Linear(128, action_space))
+        self.fc = nn.Sequential(nn.Linear(3*64, 256), nn.LeakyReLU(0.1), nn.Linear(256, 256), nn.LeakyReLU(0.1),
+                                nn.Linear(256, 256), nn.LeakyReLU(0.1), nn.Linear(256, 32), nn.LeakyReLU(0.1),
+                                nn.Linear(32, action_space))
 
     def forward(self, obs, state=None, info={}):
         # assert isinstance(obs, dict)

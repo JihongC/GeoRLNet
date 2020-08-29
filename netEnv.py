@@ -138,6 +138,7 @@ class NetEnv(core.Env):
 class TransObservation(ObservationWrapper):
     def __init__(self, env):
         super(TransObservation, self).__init__(env)
+        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(3, 146), dtype=np.float)
 
     def observation(self, observation):
         bfs_edge = observation['flow']
