@@ -150,11 +150,10 @@ class Flow:
 
         """
         bfs_edge_feature = np.zeros((len(topology.edges), ), dtype=np.float)
-        source_bfs_edges = list(nx.bfs_edges(topology, self.source, depth_limit=15))
-        destination_bfs_edges = list(nx.bfs_edges(topology, self.destination, depth_limit=15))
+        source_bfs_edges = list(nx.bfs_edges(topology, self.source, depth_limit=10))
+        destination_bfs_edges = list(nx.bfs_edges(topology, self.destination, depth_limit=10))
         for i, (a, b) in enumerate(topology.edges):
-            if (a, b) in source_bfs_edges or (b, a) in source_bfs_edges:
+            if ((a, b) in source_bfs_edges or (b, a) in source_bfs_edges) or \
+                    ((a, b) in destination_bfs_edges or (b, a) in destination_bfs_edges):
                 bfs_edge_feature[i] += 1
-            if (a, b) in destination_bfs_edges or (b, a) in destination_bfs_edges:
-                bfs_edge_feature[i] += 1
-        self.edge_bfs_features = bfs_edge_feature
+        self.edge_bfs_features = bfs_edge_feature * self.size

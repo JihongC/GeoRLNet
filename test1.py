@@ -47,26 +47,26 @@ class Test():
         sum = 0
         max = -sys.maxsize
         if test_way == 'random':
-            for i in tqdm(range(200)):
+            for i in tqdm(range(1000)):
                 self.env.reset()
                 _, s, _ = self.random()
                 sum += s
                 if s > max:
                     max = s
-            return sum / 200, max
+            return sum / 1000, max
         if test_way == 'pooling':
-            for i in tqdm(range(200)):
+            for i in tqdm(range(1000)):
                 self.env.reset()
                 _, s, _ = self.pooling()
                 sum += s
                 if s > max:
                     max = s
-            return sum / 200, max
+            return sum / 1000, max
         if test_way == 'choose_one':
-            for i in tqdm(range(200)):
+            for i in tqdm(range(1000)):
                 self.env.reset()
                 _, s, _ = self.choose_one()
                 sum += s
                 if s > max:
                     max = s
-            return sum / 200, max
+            return sum / 1000, max

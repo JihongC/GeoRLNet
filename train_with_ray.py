@@ -14,7 +14,7 @@ register_env("my_env", env_creator)
 ray.shutdown()
 ray.init()
 
-trainer = ppo.PPOTrainer(env="my_env", config={"framework": "torch", "num_workers": 15, "num_envs_per_worker": 2,
+trainer = ppo.PPOTrainer(env="my_env", config={"framework": "torch", "num_workers": 30, "num_envs_per_worker": 3,
                                                "num_gpus": 1,
                                                "model": {
                                                    "custom_model": "my_model",

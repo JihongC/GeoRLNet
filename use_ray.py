@@ -13,8 +13,8 @@ class RLNetwork(TorchModelV2, nn.Module):
         custom_model_config = model_config.get("custom_model_config")
         # activation = custom_model_config.get("activation")
         # no_final_layer = custom_model_config.get("no_final_layer")
-        sse_hiddens = [256, 256, 64]
-        hiddens = [256, 256, 64]
+        sse_hiddens = [256, 128, 64]
+        hiddens = [256, 256, 256, 32]
         self.num_slice = 3
         self.vf_share_layers = True
         sse_layers = []

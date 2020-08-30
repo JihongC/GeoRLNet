@@ -1,5 +1,6 @@
 from gym import core, spaces, ObservationWrapper
 import numpy as np
+import numpy.ma as npm
 
 from slice import Slice
 from topology import Topology
@@ -138,9 +139,12 @@ class NetEnv(core.Env):
 class TransObservation(ObservationWrapper):
     def __init__(self, env):
         super(TransObservation, self).__init__(env)
-        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(3, 146), dtype=np.float)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(3, 146), dtype=np.float)
 
     def observation(self, observation):
         bfs_edge = observation['flow']
-        slice_edge = [observation['slice' + str(i)] * bfs_edge for i in range(3)]
+        # mask = bfs_edge > 0
+        # for i in range(3):
+        #     observation['slice' + str(i)][~mask] = 0
+        slice_edge = [observation['slice' + str(i)] - bfs_edge for i in range(3)]
         return np.stack(slice_edge, axis=0)
